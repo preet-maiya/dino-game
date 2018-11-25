@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <cmath>
-
+#include <unistd.h>
+#include <string.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <GL/glu.h>
 
-static int animationPeriod = 4;
+static int animationPeriod = 3;
 static int isAnimate = 0;
 
 const int fact = 3;
@@ -23,7 +24,34 @@ static int x_ = 2500;
 static double tree_len = 1;
 static int new_frame = 1;
 
+void *currentfont;
+char score[5], highscore[5];
+int iscore, ihighscore;
+
 using namespace std;
+
+void drawstring(GLfloat x,GLfloat y,char *string)
+{
+    char *c;
+	glRasterPos2f(x,y);
+	for(c=string;
+			*c!='\0';
+			c++)
+	{
+		glutBitmapCharacter(currentfont,*c);
+	}
+}
+
+void set_score()
+{
+    iscore++;
+    sprintf(score, "%d", iscore);
+}
+
+void set_speed(int speed)
+{
+    animationPeriod = speed;
+}
 
 void animate(int value){
     if(isAnimate){
@@ -258,15 +286,28 @@ void jump_dino() {
 }
 
 void reset(){
+    if(iscore>ihighscore)
+    {
+        sprintf(highscore, "%d", iscore);
+    }
+    
     w = 200;
     jump = 0;
     walk = 0;
     x_ = 2500;
-    animationPeriod = 4;
+    //animationPeriod = 3;
     isAnimate = 0;
+    iscore = 0;
+    // puts("Foo");
 }
 void render( void ){
     glClear(GL_COLOR_BUFFER_BIT);
+
+    set_score();
+    drawstring(1675, 1900, "Score: ");
+    drawstring(1800, 1900, score);
+    drawstring(1580, 1800, "High Score: ");
+    drawstring(1800, 1800, highscore);
 
     generate_ground();
 
@@ -277,10 +318,11 @@ void render( void ){
 
     generate_tree(x_, tree_len);
 
-    generate_dino(x);
 
+    generate_dino(x);
     // Check if game over
     if(collision(tree_len)){
+        drawstring(950, 1000, "Game Over!");
         reset();
     }
 
@@ -288,15 +330,21 @@ void render( void ){
 
     jump_dino(); 
     
+    //usleep(10000);
+
     glFlush();
 }
-
 
 void setup(void){
 	glClearColor(1.0, 1.0, 1.0, 0.0);
     glMatrixMode(GL_PROJECTION);
     gluOrtho2D(0.0, 2000, 0.0, 2000);
     glRasterPos2i(10, 10);
+    currentfont = GLUT_BITMAP_TIMES_ROMAN_24;
+    iscore = 0;
+    ihighscore = 0;
+    strcpy(score, "0");
+    strcpy(highscore, "0");
 }
 
 int main( int argc , char** argv ){
@@ -312,5 +360,11 @@ int main( int argc , char** argv ){
     glutKeyboardFunc(keyInput);
     glutSpecialFunc(specialKeyInput);
 
+    glutCreateMenu(set_speed);
+    glutAddMenuEntry("Normal", 4);
+    glutAddMenuEntry("Fast", 3);
+    glutAddMenuEntry("Very Fast", 2);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+    
     glutMainLoop();
 }
